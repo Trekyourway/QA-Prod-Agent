@@ -1,0 +1,21 @@
+name: Runner canary
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/canary.yml']
+
+permissions: {}
+
+jobs:
+  canary:
+    name: Hosted runner starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Harmless check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c "import sys; assert sys.version_info >= (3, 9); print('OK')"

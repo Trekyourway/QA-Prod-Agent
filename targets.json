@@ -1,0 +1,18 @@
+{
+  "targets": [
+    {
+      "id": "H",
+      "origin": "https://huts.yourwaytrek.com",
+      "version": { "path": "/api/payment-config", "keys": ["build", "commit"] },
+      "checks": [
+        { "code": "H01", "kind": "page", "path": "/" },
+        { "code": "H02", "kind": "page", "path": "/trails-hike/" },
+        { "code": "H03", "kind": "page", "path": "/register.html" },
+        { "code": "H04", "kind": "page", "path": "/planner.html" },
+        { "code": "H05", "kind": "page", "path": "/payment.html" },
+        { "code": "H20", "kind": "json_ok", "path": "/api/public-data?action=treks" },
+        { "code": "H21", "kind": "json_ok", "path": "/api/public-data?action=huts-map" }
+      ]
+    }
+  ]
+}
