@@ -7,10 +7,12 @@ Design rules (do not weaken):
   * Public output is limited to check codes, PASS/WARN/FAIL and the public
     build id of the site. Never print page content, URLs of failures or errors.
 """
+import importlib.util
 import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -27,6 +29,9 @@ NO_TRACK = ("google-analytics.com", "googletagmanager.com", "facebook.net",
 MIN_TEXT = 12
 NAV_TIMEOUT_MS = 25000
 CODE_RE = re.compile(r"^[A-Z][A-Z0-9]{1,7}$")
+FLOW_RE = re.compile(r"^[a-z][a-z0-9_]{1,30}$")
+KINDS = ("page", "json_ok", "flow")
+FLOW_BUDGET_S = 300  # flows of one target stop starting after this long
 
 
 def load_targets(path):
@@ -38,8 +43,12 @@ def load_targets(path):
         if not (u.scheme == "https" or (local and u.scheme == "http")):
             raise ValueError("origin must be https")
         for c in t["checks"]:
-            if not CODE_RE.match(c["code"]) or c["kind"] not in ("page", "json_ok"):
+            if not CODE_RE.match(c["code"]) or c["kind"] not in KINDS:
                 raise ValueError("bad check")
+            if c["kind"] == "flow" and not FLOW_RE.match(str(c.get("flow", ""))):
+                raise ValueError("bad flow")
+            if not isinstance(c.get("enforce", True), bool):
+                raise ValueError("bad enforce")
             if not c["path"].startswith("/"):
                 raise ValueError("bad path")
     return targets
@@ -115,6 +124,45 @@ def check_json_ok(request, target, check):
         return "FAIL"
 
 
+def load_flows(target):
+    """Flow functions of a target live in flows_<id>.py next to this file."""
+    try:
+        name = "flows_" + target["id"].lower()
+        if not re.fullmatch(r"flows_[a-z]", name):
+            return {}
+        sys.dont_write_bytecode = True  # leave no cache files behind
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(name + ".py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return dict(module.FLOWS)
+    except Exception:
+        return {}
+
+
+def check_flow(browser, target, check, vp, flows):
+    """Returns PASS|FAIL. Fresh context per attempt; the guard covers every tab."""
+    fn = flows.get(check["flow"])
+    if fn is None:
+        return "FAIL"
+    host = urlparse(target["origin"]).hostname
+    for _attempt in (1, 2):  # one retry, as for page loads
+        ctx = browser.new_context(service_workers="block", accept_downloads=False, **vp)
+        try:
+            ctx.route("**/*", make_guard(host))
+            if fn(ctx.new_page(), target["origin"], check["path"]) is True:
+                return "PASS"
+        except Exception:
+            pass
+        finally:
+            ctx.close()
+    return "FAIL"
+
+
+def soften(check, result):
+    """A check marked "enforce": false reports WARN instead of FAIL."""
+    return "WARN" if result == "FAIL" and check.get("enforce", True) is False else result
+
+
 def run_target(pw, target, wanted):
     lines, failed = [], False
     launch = {"headless": True}
@@ -124,13 +172,25 @@ def run_target(pw, target, wanted):
     try:
         api = browser.new_context(service_workers="block").request
         before = read_version(api, target)
+        flows, flows_started = None, None
         for check in target["checks"]:
             if wanted and check["code"] not in wanted:
                 continue
             if check["kind"] == "json_ok":
-                res = check_json_ok(api, target, check)
+                res = soften(check, check_json_ok(api, target, check))
                 failed |= res == "FAIL"
                 lines.append(f"{check['code']} - api {res}")
+                continue
+            if check["kind"] == "flow":
+                if flows is None:
+                    flows, flows_started = load_flows(target), time.monotonic()
+                for vp_name, vp in VIEWPORTS.items():
+                    if time.monotonic() - flows_started > FLOW_BUDGET_S:
+                        res = soften(check, "FAIL")
+                    else:
+                        res = soften(check, check_flow(browser, target, check, vp, flows))
+                    failed |= res == "FAIL"
+                    lines.append(f"{check['code']} {vp_name} flow {res}")
                 continue
             for vp_name, vp in VIEWPORTS.items():
                 ctx = browser.new_context(service_workers="block",
@@ -141,6 +201,7 @@ def run_target(pw, target, wanted):
                         res = check_page(ctx, target, check)
                 finally:
                     ctx.close()
+                res["load"] = soften(check, res["load"])
                 failed |= res["load"] == "FAIL"
                 for part in ("load", "js", "fit"):
                     lines.append(f"{check['code']} {vp_name} {part} {res[part]}")

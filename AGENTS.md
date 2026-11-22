@@ -4,7 +4,12 @@ This repository is public. Treat every byte, commit message and log line as publ
 
 Allowed
 - Add a check to `targets.json`: a public path that any anonymous visitor can open.
-  Give it a neutral code (letter of the target + number). Kinds: `page`, `json_ok`.
+  Give it a neutral code (letter of the target + number). Kinds: `page`, `json_ok`, `flow`.
+- Add a `flow` check: a function in `flows_<target>.py` that walks public pages as an
+  anonymous visitor and returns pass/fail. It may fill fields with obviously synthetic
+  values and may press a submit button only on input the page itself must refuse; it
+  must never complete a submission. It refers only to what any visitor sees in the page.
+- `"enforce": false` on a check reports `WARN` instead of `FAIL` while it is in calibration.
 - Improve the engine without weakening the rules below.
 
 Never
