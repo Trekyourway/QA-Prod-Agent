@@ -244,6 +244,8 @@ def planner(page, origin, path):
     # Length: one more day (or one fewer at the upper limit) changes the plan.
     before = page.evaluate(state)
     for control in ("#daysPlus", "#daysMinus"):
+        if not page.locator(control).is_enabled():
+            continue  # already at that limit
         page.locator(control).click()
         try:
             page.wait_for_function("a => (" + state + ")() !== a", arg=before, timeout=4000)
