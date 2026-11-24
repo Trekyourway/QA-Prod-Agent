@@ -10,8 +10,10 @@ on:
   schedule:
     - cron: '7,37 * * * *'
 
+# Write access is used for one thing only: appending the run's own output to
+# the "results" branch of this repository.
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: external-checks
@@ -34,4 +36,34 @@ jobs:
       - name: Run read-only checks
         env:
           QA_CODES: ${{ inputs.codes }}
+          QA_RESULTS_FILE: ${{ runner.temp }}/run.json
         run: .venv/bin/python -I qa_prod_agent.py
+      - name: Record the run on the results branch
+        if: always()
+        env:
+          RUN_FILE: ${{ runner.temp }}/run.json
+          OUT_DIR: ${{ runner.temp }}/results
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          test -s "$RUN_FILE" || exit 0
+          REMOTE="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          if git clone --quiet --depth 1 --branch results "$REMOTE" "$OUT_DIR" 2>/dev/null; then :; else
+            mkdir -p "$OUT_DIR" && cd "$OUT_DIR" && git init --quiet && git checkout --quiet --orphan results && git remote add origin "$REMOTE"
+          fi
+          cd "$OUT_DIR"
+          python3 -I - "$RUN_FILE" <<'PY'
+          import json, sys
+          run = json.load(open(sys.argv[1], encoding="utf-8"))
+          try:
+              history = json.load(open("history.json", encoding="utf-8"))
+          except Exception:
+              history = []
+          history = (history + [run])[-600:]
+          json.dump(history, open("history.json", "w", encoding="utf-8"), separators=(",", ":"))
+          json.dump(run, open("latest.json", "w", encoding="utf-8"), separators=(",", ":"))
+          PY
+          git add history.json latest.json
+          git -c user.name="qa-prod-agent" -c user.email="qa-prod-agent@users.noreply.github.com" commit --quiet -m "run"
+          git push --quiet origin HEAD:results

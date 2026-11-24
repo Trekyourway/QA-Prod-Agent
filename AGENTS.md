@@ -22,6 +22,8 @@ Never
 - Triggers other than `schedule`, `workflow_dispatch`, and the canary's own push.
   No `pull_request`, `pull_request_target`, `workflow_run`, `repository_dispatch`.
 - Self-hosted or larger runners. Unpinned actions.
+- Any write by the workflow other than appending its own run output (codes, outcomes,
+  build ids, time) to the `results` branch of this repository.
 
 Before every push: `python3 -I prepublish_validate.py` must print `SAFE_TO_REVIEW`.
 Flows that need a login or internal knowledge belong in the private project

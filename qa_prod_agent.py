@@ -261,11 +261,24 @@ def run_target(pw, target, wanted):
     return before, after, lines, failed
 
 
+def write_record(record):
+    """Optional machine-readable copy of exactly what was printed: codes, outcomes,
+    build ids and the time. Nothing else is ever added to it."""
+    path = os.environ.get("QA_RESULTS_FILE")
+    if not path:
+        return
+    try:
+        Path(path).write_text(json.dumps(record, separators=(",", ":")), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def main(argv):
     targets_file = argv[1] if len(argv) > 1 else str(Path(__file__).with_name("targets.json"))
     raw = os.environ.get("QA_CODES", "")
     wanted = {c for c in raw.replace(" ", "").split(",") if CODE_RE.match(c)}
     overall_fail = False
+    record = {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "targets": []}
     try:
         targets = load_targets(targets_file)
         with sync_playwright() as pw:
@@ -280,8 +293,12 @@ def main(argv):
                 for line in lines:
                     print(line, flush=True)
                 overall_fail |= failed or state == "MIXED"
+                record["targets"].append(
+                    {"id": target["id"], "build": after, "state": state, "lines": lines})
     except Exception:
         overall_fail = True
+    record["result"] = "FAIL" if overall_fail else "PASS"
+    write_record(record)
     print("RESULT FAIL" if overall_fail else "RESULT PASS", flush=True)
     return 1 if overall_fail else 0
 
