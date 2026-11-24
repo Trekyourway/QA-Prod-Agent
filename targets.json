@@ -22,6 +22,30 @@
         { "code": "H37", "kind": "flow", "flow": "language", "path": "/register.html" },
         { "code": "H38", "kind": "flow", "flow": "no_order", "path": "/payment.html" }
       ]
+    },
+    {
+      "id": "Y",
+      "origin": "https://yourpros-webapp.vercel.app",
+      "checks": [
+        { "code": "Y01", "kind": "page", "path": "/", "enforce": false },
+        { "code": "Y02", "kind": "page", "path": "/search", "enforce": false },
+        { "code": "Y03", "kind": "page", "path": "/client/search", "enforce": false },
+        { "code": "Y04", "kind": "page", "path": "/about", "enforce": false },
+        { "code": "Y05", "kind": "page", "path": "/contact", "enforce": false },
+        { "code": "Y06", "kind": "page", "path": "/terms", "enforce": false },
+        { "code": "Y07", "kind": "page", "path": "/privacy", "enforce": false },
+        { "code": "Y08", "kind": "page", "path": "/login", "enforce": false },
+        { "code": "Y09", "kind": "page", "path": "/provider/onboarding", "enforce": false },
+        { "code": "Y30", "kind": "flow", "flow": "browse", "path": "/client/search", "enforce": false },
+        { "code": "Y31", "kind": "flow", "flow": "category", "path": "/client/search", "enforce": false },
+        { "code": "Y32", "kind": "flow", "flow": "home", "path": "/", "enforce": false },
+        { "code": "Y33", "kind": "flow", "flow": "site_links", "path": "/", "enforce": false },
+        { "code": "Y34", "kind": "flow", "flow": "search_modes", "path": "/search", "enforce": false },
+        { "code": "Y35", "kind": "flow", "flow": "join_guard", "path": "/provider/onboarding", "enforce": false },
+        { "code": "Y36", "kind": "flow", "flow": "gate", "path": "/dashboard", "enforce": false },
+        { "code": "Y37", "kind": "flow", "flow": "gate", "path": "/client/requests", "enforce": false },
+        { "code": "Y38", "kind": "flow", "flow": "report_box", "path": "/about", "enforce": false }
+      ]
     }
   ]
 }
