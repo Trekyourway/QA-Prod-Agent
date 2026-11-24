@@ -46,6 +46,40 @@
         { "code": "Y37", "kind": "flow", "flow": "gate", "path": "/client/requests", "enforce": false },
         { "code": "Y38", "kind": "flow", "flow": "report_box", "path": "/about", "enforce": false }
       ]
+    },
+    {
+      "id": "A",
+      "origin": "https://allassist.vercel.app",
+      "checks": [
+        { "code": "A01", "kind": "page", "path": "/", "enforce": false },
+        { "code": "A30", "kind": "flow", "flow": "gate", "path": "/", "enforce": false },
+        { "code": "A31", "kind": "flow", "flow": "gate", "path": "/#/chat", "enforce": false },
+        { "code": "A32", "kind": "flow", "flow": "cancelled", "path": "/?error=access_denied", "enforce": false },
+        { "code": "A33", "kind": "flow", "flow": "install", "path": "/", "enforce": false }
+      ]
+    },
+    {
+      "id": "E",
+      "origin": "https://arielassistforcustomers.vercel.app",
+      "checks": [
+        { "code": "E01", "kind": "page", "path": "/", "enforce": false },
+        { "code": "E02", "kind": "page", "path": "/start", "enforce": false },
+        { "code": "E03", "kind": "page", "path": "/dashboard", "enforce": false },
+        { "code": "E04", "kind": "page", "path": "/terms", "enforce": false },
+        { "code": "E05", "kind": "page", "path": "/privacy", "enforce": false },
+        { "code": "E06", "kind": "page", "path": "/accessibility", "enforce": false },
+        { "code": "E07", "kind": "page", "path": "/signup", "enforce": false },
+        { "code": "E08", "kind": "page", "path": "/signup-legacy", "enforce": false },
+        { "code": "E30", "kind": "flow", "flow": "cta", "path": "/", "enforce": false },
+        { "code": "E31", "kind": "flow", "flow": "content", "path": "/", "enforce": false },
+        { "code": "E32", "kind": "flow", "flow": "calc", "path": "/", "enforce": false },
+        { "code": "E33", "kind": "flow", "flow": "offer", "path": "/", "enforce": false },
+        { "code": "E34", "kind": "flow", "flow": "legal", "path": "/", "enforce": false },
+        { "code": "E35", "kind": "flow", "flow": "wizard", "path": "/start", "enforce": false },
+        { "code": "E36", "kind": "flow", "flow": "wizard_guard", "path": "/start", "enforce": false },
+        { "code": "E37", "kind": "flow", "flow": "login_guard", "path": "/dashboard", "enforce": false },
+        { "code": "E38", "kind": "flow", "flow": "contact", "path": "/", "enforce": false }
+      ]
     }
   ]
 }

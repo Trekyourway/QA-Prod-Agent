@@ -10,11 +10,13 @@ import sys
 
 ALLOWED = {
     "README.md", "AGENTS.md", "targets.json", "qa_prod_agent.py", "flows_h.py", "flows_y.py",
+    "flows_a.py", "flows_e.py",
     "prepublish_validate.py",
     ".github/workflows/canary.yml", ".github/workflows/checks.yml",
 }
 REQUIRED = {"qa_prod_agent.py", "flows_h.py", "targets.json", ".github/workflows/checks.yml"}
-CODE_FILES = {"qa_prod_agent.py", "flows_h.py", "flows_y.py", "targets.json",
+CODE_FILES = {"qa_prod_agent.py", "flows_h.py", "flows_y.py", "flows_a.py", "flows_e.py",
+              "targets.json",
               ".github/workflows/canary.yml", ".github/workflows/checks.yml"}
 DENIED = (
     "secrets.", "service_role", "supabase", "private_key", "github_token",

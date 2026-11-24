@@ -54,6 +54,38 @@ def load_targets(path):
     return targets
 
 
+# Second layer under the request guard: the page itself cannot issue a write.
+# The guard aborts writes on the wire; this stops them before they are created,
+# so nothing is left pending when a page or context is closed.
+READ_ONLY_JS = """(() => {
+  const safe = m => ['GET', 'HEAD'].includes(String(m || 'GET').toUpperCase());
+  const realFetch = window.fetch;
+  window.fetch = function (input, init) {
+    const m = (init && init.method) || (input && typeof input === 'object' && input.method) || 'GET';
+    return safe(m) ? realFetch.apply(this, arguments) : Promise.reject(new TypeError('Failed to fetch'));
+  };
+  const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function (m) { this.__ro = safe(m); return open.apply(this, arguments); };
+  XMLHttpRequest.prototype.send = function () {
+    if (this.__ro) return send.apply(this, arguments);
+    setTimeout(() => this.dispatchEvent(new Event('error')), 0);
+  };
+  if (navigator.sendBeacon) navigator.sendBeacon = () => false;
+  const formSafe = f => safe(f.getAttribute('method'));
+  const submit = HTMLFormElement.prototype.submit;
+  HTMLFormElement.prototype.submit = function () { if (formSafe(this)) return submit.apply(this, arguments); };
+  addEventListener('submit', e => {
+    if (e.target instanceof HTMLFormElement && !formSafe(e.target) && !e.defaultPrevented) e.preventDefault();
+  });
+})();"""
+
+
+def read_only(ctx):
+    """Every browsing context used for a check gets the in-page write block."""
+    ctx.add_init_script(READ_ONLY_JS)
+    return ctx
+
+
 def make_guard(origin_host):
     def guard(route):
         req = route.request
@@ -67,6 +99,16 @@ def make_guard(origin_host):
             return route.abort()
         return route.continue_()
     return guard
+
+
+def park(page):
+    """Leave the site before a page or context is torn down. A request the page
+    has only just issued could otherwise be released, unguarded, by the teardown."""
+    try:
+        page.goto("about:blank", timeout=5000)
+        page.wait_for_timeout(150)  # let any queued request reach the guard
+    except Exception:
+        pass
 
 
 def read_version(request, target):
@@ -112,6 +154,7 @@ def check_page(context, target, check):
     except Exception:
         out["load"] = "FAIL"
     finally:
+        park(page)
         page.close()
     return out
 
@@ -151,7 +194,7 @@ def check_flow(browser, target, check, vp, flows):
         return "FAIL"
     host = urlparse(target["origin"]).hostname
     for _attempt in (1, 2):  # one retry, as for page loads
-        ctx = browser.new_context(service_workers="block", accept_downloads=False, **vp)
+        ctx = read_only(browser.new_context(service_workers="block", accept_downloads=False, **vp))
         try:
             ctx.route("**/*", make_guard(host))
             if fn(ctx.new_page(), target["origin"], check["path"]) is True:
@@ -159,6 +202,8 @@ def check_flow(browser, target, check, vp, flows):
         except Exception:
             pass
         finally:
+            for open_page in ctx.pages:
+                park(open_page)
             ctx.close()
     return "FAIL"
 
@@ -198,8 +243,8 @@ def run_target(pw, target, wanted):
                     lines.append(f"{check['code']} {vp_name} flow {res}")
                 continue
             for vp_name, vp in VIEWPORTS.items():
-                ctx = browser.new_context(service_workers="block",
-                                          accept_downloads=False, **vp)
+                ctx = read_only(browser.new_context(service_workers="block",
+                                                    accept_downloads=False, **vp))
                 try:
                     res = check_page(ctx, target, check)
                     if res["load"] == "FAIL":  # one retry: a single slow load is not a finding
