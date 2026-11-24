@@ -12,15 +12,15 @@
         { "code": "H05", "kind": "page", "path": "/payment.html" },
         { "code": "H20", "kind": "json_ok", "path": "/api/public-data?action=treks" },
         { "code": "H21", "kind": "json_ok", "path": "/api/public-data?action=huts-map" },
-        { "code": "H30", "kind": "flow", "flow": "discover", "path": "/trails-hike/", "enforce": false },
-        { "code": "H31", "kind": "flow", "flow": "trek_page", "path": "/", "enforce": false },
-        { "code": "H32", "kind": "flow", "flow": "form_fill", "path": "/register.html", "enforce": false },
-        { "code": "H33", "kind": "flow", "flow": "form_guard", "path": "/register.html", "enforce": false },
-        { "code": "H34", "kind": "flow", "flow": "planner", "path": "/planner.html", "enforce": false },
-        { "code": "H35", "kind": "flow", "flow": "menu", "path": "/", "enforce": false },
-        { "code": "H36", "kind": "flow", "flow": "language", "path": "/", "enforce": false },
-        { "code": "H37", "kind": "flow", "flow": "language", "path": "/register.html", "enforce": false },
-        { "code": "H38", "kind": "flow", "flow": "no_order", "path": "/payment.html", "enforce": false }
+        { "code": "H30", "kind": "flow", "flow": "discover", "path": "/trails-hike/" },
+        { "code": "H31", "kind": "flow", "flow": "trek_page", "path": "/" },
+        { "code": "H32", "kind": "flow", "flow": "form_fill", "path": "/register.html" },
+        { "code": "H33", "kind": "flow", "flow": "form_guard", "path": "/register.html" },
+        { "code": "H34", "kind": "flow", "flow": "planner", "path": "/planner.html" },
+        { "code": "H35", "kind": "flow", "flow": "menu", "path": "/" },
+        { "code": "H36", "kind": "flow", "flow": "language", "path": "/" },
+        { "code": "H37", "kind": "flow", "flow": "language", "path": "/register.html" },
+        { "code": "H38", "kind": "flow", "flow": "no_order", "path": "/payment.html" }
       ]
     }
   ]

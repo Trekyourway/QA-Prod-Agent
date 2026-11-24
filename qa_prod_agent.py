@@ -117,11 +117,16 @@ def check_page(context, target, check):
 
 
 def check_json_ok(request, target, check):
-    try:
-        r = request.get(target["origin"] + check["path"], timeout=NAV_TIMEOUT_MS, max_redirects=0)
-        return "PASS" if r.status == 200 and r.json().get("ok") is True else "FAIL"
-    except Exception:
-        return "FAIL"
+    for attempt in (1, 2):  # one retry, as for page loads: a single blip is not a finding
+        try:
+            r = request.get(target["origin"] + check["path"], timeout=NAV_TIMEOUT_MS, max_redirects=0)
+            if r.status == 200 and r.json().get("ok") is True:
+                return "PASS"
+        except Exception:
+            pass
+        if attempt == 1:
+            time.sleep(3)
+    return "FAIL"
 
 
 def load_flows(target):
